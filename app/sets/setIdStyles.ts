@@ -1,0 +1,233 @@
+import { StyleSheet } from "react-native";
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#121212",
+    paddingTop: 40,
+    position: "relative",
+  },
+  headerContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: "#121212",
+    marginBottom: 20,
+  },
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#e5e7eb",
+    paddingRight: 8,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#1f2937",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#334155",
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 999,
+    backgroundColor: "#1f2937",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#334155",
+    marginRight: 8,
+  },
+  headerMetaRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  visibilityBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: "#111827",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#334155",
+  },
+  visibilityText: {
+    fontSize: 12,
+    color: "#cbd5e1",
+    textTransform: "capitalize",
+  },
+  answerToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  toggleLabel: {
+    fontSize: 12,
+    color: "#cbd5e1",
+    marginRight: 4,
+  },
+  countBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: "#052e1b",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#14532d",
+  },
+  countText: {
+    fontSize: 12,
+    color: "#34d399",
+    fontWeight: "600",
+  },
+  restrictedRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  manageAccessBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: "#1e1033",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#7c3aed",
+  },
+  manageAccessText: {
+    color: "#c4b5fd",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  avatarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatarWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+    backgroundColor: "#f3f4f6",
+  },
+  avatarImg: {
+    width: "100%",
+    height: "100%",
+  },
+  avatarFallback: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarFallbackText: {
+    color: "#111827",
+    fontWeight: "600",
+  },
+  listContent: {
+    paddingHorizontal: 12,
+    paddingBottom: 24,
+  },
+  // removed obsolete inline card styles; QuestionCard handles styling
+  emptyCard: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#334155",
+    backgroundColor: "#0f172a",
+  },
+  emptyText: {
+    color: "#94a3b8",
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#121212",
+  },
+  centerText: {
+    marginTop: 8,
+    color: "#e5e7eb",
+  },
+  errorText: {
+    color: "#ef4444",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#121212",
+    paddingTop: 48,
+  },
+  modalHeader: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#e5e7eb",
+  },
+  modalCloseBtn: {
+    position: "absolute",
+    right: 16,
+    top: 48,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: "#1f2937",
+  },
+  modalCloseText: {
+    color: "#e5e7eb",
+    fontWeight: "600",
+  },
+  modalBody: {
+    padding: 16,
+  },
+  modalBodyText: {
+    color: "#94a3b8",
+  },
+  bottomSheetOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  bottomSheetContainer: {
+    backgroundColor: "#121212",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 24,
+  },
+  bottomSheetHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#334155",
+  },
+});
+
+export default styles;
