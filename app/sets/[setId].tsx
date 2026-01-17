@@ -167,13 +167,42 @@ const ExistingSetScreen = () => {
   const { setId } = useLocalSearchParams();
   console.log(setId);
 
-  const [set, setSet] = useState<SetPreferences>({
-    id: "0e99b245-2acc-4aee-b82c-bdad054d7df2",
-    visibility: "restricted",
-    title: "Semiconductor",
-  });
+  const [set, setSet] = useState<SetPreferences | null>(null);
 
-  const [items, setItems] = useState(dummy_questions as any[]);
+  React.useEffect(() => {
+    const fetchSet = async () => {
+      try {
+        const resp = await fetch(`http://localhost:3000/api/set/${setId}`);
+        const data = await resp.json();
+        if (data?.set) {
+          setSet(data.set);
+        }
+      } catch (e) {
+        console.log("Failed to load set", e);
+      }
+    };
+    fetchSet();
+  }, [setId]);
+
+  const [items, setItems] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const resp = await fetch(
+          `http://localhost:3000/api/questions/${setId}`,
+        );
+        const data = await resp.json();
+        if (Array.isArray(data?.questions)) {
+          setItems(data.questions);
+          console.log(data);
+        }
+      } catch (e) {
+        console.log("Failed to load questions", e);
+      }
+    };
+    if (setId) fetchQuestions();
+  }, [setId]);
 
   const editQuestionById = (questionId: string | number, updates: any) => {
     setItems((prev) =>
@@ -218,14 +247,16 @@ const ExistingSetScreen = () => {
     <View style={styles.container}>
       <FlatList
         data={items}
-        keyExtractor={(item: any) => String(item.id)}
+        keyExtractor={(item: any, index: number) =>
+          item?.id != null ? `${String(item.id)}-${index}` : String(index)
+        }
         numColumns={1}
         contentContainerStyle={styles.listContent}
         renderItem={({ item, index }) => (
           <QuestionCard
             question={item}
             position={index + 1}
-            selected={selectedAnswers[String(item.id)] || ""}
+            selected={selectedAnswers[String(item?.id ?? index)] || ""}
             selectAnswer={handleSelectingAnswer}
             editQuestion={editQuestionById}
             deleteQuestion={deleteQuestionById}
@@ -233,9 +264,9 @@ const ExistingSetScreen = () => {
         )}
         ListHeaderComponent={() => (
           <Header
-            setId={set.id}
-            title={set.title || "Set"}
-            visibility={set.visibility}
+            setId={set?.id || ""}
+            title={(set?.title as string) || "Set"}
+            visibility={set?.visibility}
             itemsLength={items.length}
             showAnswer={!!showAnswer}
             toggleShowAnswer={toggleShowAnswer}

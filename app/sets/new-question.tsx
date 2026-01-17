@@ -6,11 +6,51 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import NewQuestionsAdd from "@/components/sets/NewQuestionsAdd";
+import { Alert } from "react-native";
 
 export default function NewQuestionScreen() {
+  const { setId } = useLocalSearchParams();
+
+  const handleCreate = async (q: any) => {
+    try {
+      const payload: any = {
+        setId: String(setId || ""),
+        text: String(q?.text || ""),
+        type: String(q?.type || "multiple_choice_questions"),
+        difficulty: String(q?.difficulty || "easy"),
+        choices: Array.isArray(q?.choices) ? q.choices : [],
+        answer: String(q?.answer || ""),
+        answerIdx: typeof q?.answerIdx === "number" ? q.answerIdx : 0,
+        explanation: q?.explanation ?? "",
+      };
+
+      if (!payload.setId) {
+        throw new Error("Missing setId in route params");
+      }
+
+      const resp = await fetch("http://localhost:3000/api/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        const msg = data?.error || "Failed to create question";
+        throw new Error(msg);
+      }
+
+      Alert.alert("Success", "Question created", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (err: any) {
+      console.log("Create question failed", err);
+      Alert.alert("Error", String(err?.message || "Failed to create question"));
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -25,11 +65,7 @@ export default function NewQuestionScreen() {
         <View style={{ width: 60 }} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <NewQuestionsAdd
-          onCreate={(q: any) => {
-            router.back();
-          }}
-        />
+        <NewQuestionsAdd onCreate={handleCreate} />
       </ScrollView>
     </View>
   );

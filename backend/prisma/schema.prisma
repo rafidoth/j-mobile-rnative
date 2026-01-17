@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Set {
+  id         String    @id @default(uuid())
+  visibility String
+  title      String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  questions  Question[]
+}
+
+model Question {
+  id          String   @id @default(uuid())
+  setId       String
+  set         Set      @relation(fields: [setId], references: [id], onDelete: Cascade)
+  text        String
+  type        String
+  difficulty  String
+  choices     Json
+  answer      String
+  answerIdx   Int
+  explanation String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

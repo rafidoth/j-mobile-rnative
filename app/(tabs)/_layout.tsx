@@ -1,15 +1,14 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { Redirect } from "expo-router";
-import { useAuth, useUser } from "@clerk/clerk-expo";
+import { useSession } from "../../context/AuthContext";
 import { Home, Archive, ClipboardList } from "lucide-react-native";
 import { Image } from "react-native";
 
 const Layout = () => {
-  const { isSignedIn } = useAuth();
-  const { user } = useUser();
+  const { session } = useSession();
 
-  if (!isSignedIn) {
+  if (!session) {
     return <Redirect href="/sign-in" />;
   }
 
@@ -55,24 +54,16 @@ const Layout = () => {
         options={{
           title: "You",
           tabBarIcon: ({ color, size }) => {
-            const uri = user?.imageUrl || user?.image_url || undefined;
-            if (!uri) {
-              return (
-                <Image
-                  source={{ uri: "" }}
-                  style={{
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                    opacity: 0,
-                  }}
-                />
-              );
-            }
             return (
               <Image
-                source={{ uri }}
-                style={{ width: size, height: size, borderRadius: size / 2 }}
+                source={{ uri: "https://via.placeholder.com/150" }}
+                style={{
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  opacity: 0.8,
+                  backgroundColor: "#333"
+                }}
               />
             );
           },

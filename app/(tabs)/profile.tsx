@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
-import { useClerk, useUser } from "@clerk/clerk-expo";
+import { useSession } from "../../context/AuthContext";
 
 function timeAgo(date: Date) {
   const now = new Date();
@@ -33,67 +33,36 @@ function formatReadableDateTime(date?: Date) {
 }
 
 const Profile = () => {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const { session, signOut } = useSession();
 
   const avatarSize = 64;
-  const imageUri = user?.imageUrl || (user as any)?.image_url || undefined;
-  const primaryEmail =
-    user?.primaryEmailAddress?.emailAddress ||
-    user?.emailAddresses?.[0]?.emailAddress ||
-    "";
-  const provider = user?.externalAccounts?.[0]?.provider || undefined;
-  const firstName = user?.firstName || "";
-  const lastName = user?.lastName || "";
-  const fullName = user?.fullName || `${firstName} ${lastName}`.trim();
-  const createdAtDate = user?.createdAt ? new Date(user.createdAt) : undefined;
-  const lastSignInDate = user?.lastSignInAt
-    ? new Date(user.lastSignInAt)
-    : undefined;
+  const fullName = session?.email || "User";
+  const primaryEmail = session?.email || "";
+  const createdAtDate = session?.createdAt ? new Date(session.createdAt) : undefined;
 
+  // Minimal profile view since we don't have rich user data
   return (
     <View style={styles.container}>
       <View style={styles.identityCard}>
         <View style={styles.identityRow}>
-          {imageUri ? (
-            <Image
-              source={{ uri: imageUri }}
-              style={{
+          <View
+            style={[
+              styles.avatarFallback,
+              {
                 width: avatarSize,
                 height: avatarSize,
                 borderRadius: avatarSize / 2,
-              }}
-            />
-          ) : (
-            <View
-              style={[
-                styles.avatarFallback,
-                {
-                  width: avatarSize,
-                  height: avatarSize,
-                  borderRadius: avatarSize / 2,
-                },
-              ]}
-            >
-              <Text style={styles.avatarInitial}>
-                {(fullName || "?").charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
+              },
+            ]}
+          >
+            <Text style={styles.avatarInitial}>
+              {(fullName || "?").charAt(0).toUpperCase()}
+            </Text>
+          </View>
           <View style={styles.identityTextBlock}>
             <Text style={styles.nameText} numberOfLines={1}>
-              {fullName || "Unknown User"}
+              {fullName}
             </Text>
-            {provider ? (
-              <View style={styles.providerBadge}>
-                <View style={styles.providerLogoCircle}>
-                  <Text style={styles.providerLogoText}>G</Text>
-                </View>
-                <Text style={styles.providerText}>
-                  {provider.charAt(0).toUpperCase() + provider.slice(1)}
-                </Text>
-              </View>
-            ) : null}
           </View>
         </View>
       </View>
@@ -113,12 +82,6 @@ const Profile = () => {
                 {primaryEmail}
               </Text>
             )}
-          </Text>
-        </View>
-        <View style={styles.detailBlock}>
-          <Text style={styles.detailLabel}>Last Sign-In</Text>
-          <Text style={styles.detailValue}>
-            {formatReadableDateTime(lastSignInDate)}
           </Text>
         </View>
       </View>

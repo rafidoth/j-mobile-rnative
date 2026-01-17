@@ -1,10 +1,10 @@
 import { Redirect, Slot } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
+import { useSession } from "../../context/AuthContext";
 
 export default function AuthRoutesLayout() {
-  const { isSignedIn } = useAuth();
+  const { session } = useSession();
 
-  if (isSignedIn) {
+  if (session) {
     return <Redirect href={"/"} />;
   }
 

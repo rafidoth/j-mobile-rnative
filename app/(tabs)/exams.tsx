@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 interface GenerateProps {
-  propName: type;
+  propName: string;
 }
 
 const Generate = ({ propName }: GenerateProps) => {
