@@ -11,11 +11,15 @@ datasource db {
 
 model Set {
   id         String    @id @default(uuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   visibility String
   title      String
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   questions  Question[]
+
+  @@index([userId])
 }
 
 model Question {
@@ -39,4 +43,5 @@ model User {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  sets      Set[]
 }

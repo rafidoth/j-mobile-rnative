@@ -89,3 +89,69 @@ export async function createQuestion({
     throw err;
   }
 }
+
+export async function updateQuestionById(id, updates = {}) {
+  if (!id || typeof id !== "string") {
+    throw new Error("question id is required");
+  }
+  const allowed = [
+    "text",
+    "type",
+    "difficulty",
+    "choices",
+    "answer",
+    "answerIdx",
+    "explanation",
+  ];
+  const data = {};
+  for (const key of allowed) {
+    if (Object.prototype.hasOwnProperty.call(updates, key)) {
+      data[key] = updates[key];
+    }
+  }
+  if (Object.keys(data).length === 0) {
+    throw new Error("No valid fields to update");
+  }
+  if (typeof data.answerIdx === "number" && data.answerIdx < 0) {
+    throw new Error("answerIdx must be >= 0");
+  }
+  try {
+    const question = await prisma.question.update({
+      where: { id },
+      data: { ...data },
+      select: {
+        id: true,
+        setId: true,
+        text: true,
+        type: true,
+        difficulty: true,
+        choices: true,
+        answer: true,
+        answerIdx: true,
+        explanation: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return question;
+  } catch (err) {
+    console.error("updateQuestionById error", err);
+    throw err;
+  }
+}
+
+export async function deleteQuestionById(id) {
+  if (!id || typeof id !== "string") {
+    throw new Error("question id is required");
+  }
+  try {
+    const deleted = await prisma.question.delete({
+      where: { id },
+      select: { id: true },
+    });
+    return deleted;
+  } catch (err) {
+    console.error("deleteQuestionById error", err);
+    throw err;
+  }
+}

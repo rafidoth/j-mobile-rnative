@@ -14,8 +14,8 @@ interface Props {
   question: any;
   showAnswer: boolean;
   position: number;
-  selected: string;
-  selectAnswer: (id: string, ans: string) => void;
+  selected: number;
+  selectAnswer: (id: string | number, ansIndex: number) => void;
   editQuestion: (questionId: string | number, updates: any) => void;
   deleteQuestion: (questionId: string | number) => void;
 }
@@ -41,7 +41,8 @@ export default function McqCard({
   const [draftText, setDraftText] = useState(q.text);
   const [draftChoices, setDraftChoices] = useState<string[]>(q.choices || []);
 
-  const handleEditPress = () => {
+  const [saving, setSaving] = useState(false);
+  const handleEditPress = async () => {
     if (!isEditing) {
       setIsEditing(true);
       setDraftText(q.text);
@@ -50,8 +51,15 @@ export default function McqCard({
     }
     // Done pressed: submit updates
     const updates = { text: draftText, choices: draftChoices };
-    editQuestion(q.id, updates);
-    setIsEditing(false);
+    try {
+      setSaving(true);
+      await editQuestion(q.id, updates);
+      setIsEditing(false);
+    } catch (e) {
+      // editQuestion already logs/handles; keep UI responsive
+    } finally {
+      setSaving(false);
+    }
   };
 
   const setChoiceAt = (idx: number, value: string) => {
@@ -81,7 +89,7 @@ export default function McqCard({
             activeOpacity={0.8}
           >
             <Text style={[styles.editBtnText, isEditing && styles.doneBtnText]}>
-              {isEditing ? "Done" : "Edit"}
+              {isEditing ? (saving ? "Saving..." : "Done") : "Edit"}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -112,7 +120,7 @@ export default function McqCard({
         {(isEditing ? draftChoices : q.choices)?.map(
           (c: string, idx: number) => {
             const isAnswer = idx === q.answerIdx;
-            const isSelected = selected === c;
+            const isSelected = selected === idx;
             return (
               <View
                 key={`${q.id}-choice-${idx}`}
@@ -133,7 +141,7 @@ export default function McqCard({
                     style={styles.optionInput}
                   />
                 ) : (
-                  <TouchableOpacity onPress={() => selectAnswer(q.id, c)} style={styles.optionInner}>
+                  <TouchableOpacity onPress={() => selectAnswer(q.id, idx)} style={styles.optionInner}>
                     <Text style={styles.optionText}>{c}</Text>
                     {showAnswer && isAnswer ? (
                       <View style={[styles.badge, styles.badgeDefault]}>

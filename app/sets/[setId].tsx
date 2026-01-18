@@ -25,10 +25,9 @@ import {
 } from "lucide-react-native";
 
 import useExistingSetStore from "../../store/existingSetStore";
-import QuestionCard from "../../components/question_cards/question_card";
+import McqCard from "../../components/question_cards/McqCard";
 import SetSettingsUpdateView from "@/components/sets/SetSettings";
 import NewQuestionsAdd from "@/components/sets/NewQuestionsAdd";
-import dummy_questions from "@/data/questions";
 
 type AccessUser = {
   id: string | number;
@@ -119,7 +118,7 @@ const Header = ({
     <View style={styles.headerContainer}>
       <View style={styles.headerTop}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.push("/sets")}
           style={styles.backButton}
           accessibilityLabel="Go back"
         >
@@ -189,14 +188,14 @@ const ExistingSetScreen = () => {
   React.useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const resp = await fetch(
-          `http://localhost:3000/api/questions/${setId}`,
-        );
-        const data = await resp.json();
-        if (Array.isArray(data?.questions)) {
-          setItems(data.questions);
-          console.log(data);
-        }
+         const resp = await fetch(
+           `http://localhost:3000/api/questions/${setId}`,
+         );
+         const data = await resp.json();
+         if (Array.isArray(data?.questions)) {
+           setItems(data.questions);
+         }
+
       } catch (e) {
         console.log("Failed to load questions", e);
       }
@@ -204,18 +203,52 @@ const ExistingSetScreen = () => {
     if (setId) fetchQuestions();
   }, [setId]);
 
-  const editQuestionById = (questionId: string | number, updates: any) => {
+  const editQuestionById = async (questionId: string | number, updates: any) => {
+    // optimistic update
+    const prevItems = items;
     setItems((prev) =>
       prev.map((q: any) =>
         String(q.id) === String(questionId) ? { ...q, ...updates } : q,
       ),
     );
+    try {
+      const res = await fetch(`http://localhost:3000/api/question/${encodeURIComponent(String(questionId))}` , {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+      const data = await res.json();
+      const updated = data?.question;
+      if (updated?.id != null) {
+        setItems((curr) =>
+          curr.map((q: any) => (String(q.id) === String(updated.id) ? updated : q)),
+        );
+      }
+    } catch (e) {
+      console.log("Failed to update question", e);
+      // rollback
+      setItems(prevItems);
+    }
   };
 
-  const deleteQuestionById = (questionId: string | number) => {
-    setItems((prev) =>
-      prev.filter((q: any) => String(q.id) !== String(questionId)),
-    );
+  const deleteQuestionById = async (questionId: string | number) => {
+    const prevItems = items;
+    // optimistic remove
+    setItems((prev) => prev.filter((q: any) => String(q.id) !== String(questionId)));
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/question/${encodeURIComponent(String(questionId))}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+      // optionally read response
+      // const data = await res.json();
+    } catch (e) {
+      console.log("Failed to delete question", e);
+      // rollback
+      setItems(prevItems);
+    }
   };
 
   const showAnswer = useExistingSetStore((state: any) => state.showAnswer);
@@ -224,16 +257,47 @@ const ExistingSetScreen = () => {
   );
 
   const [selectedAnswers, setSelectedAnswers] = useState<
-    Record<string, string>
+    Record<string, number>
   >({});
-  const handleSelectingAnswer = (qId: string, ans: string) => {
-    setSelectedAnswers((prev) => ({ ...prev, [qId]: ans }));
+  const handleSelectingAnswer = (qId: string | number, ansIndex: number) => {
+    setSelectedAnswers((prev) => ({ ...prev, [String(qId)]: ansIndex }));
   };
 
   // const [settingsOpen, setSettingsOpen] = useState(false);
   // const [addOpen, setAddOpen] = useState(false);
   // const onSettings = () => setSettingsOpen(true);
-  const onAdd = () => router.push("/sets/new-question");
+  const onAdd = () => {
+    if (!set?.id) return;
+    router.push(`/sets/new-question?setId=${encodeURIComponent(String(set.id))}`);
+  };
+
+  const handleCreateQuestion = async (q: any) => {
+    try {
+      if (!set?.id) return;
+      const payload = {
+        setId: String(set.id),
+        text: String(q.text || ""),
+        type: "mcq",
+        difficulty: String(q.difficulty || "medium"),
+        choices: Array.isArray(q.choices) ? q.choices : [],
+        answer: String(q.answer || ""),
+        answerIdx: Number(q.answerIdx ?? 0),
+        explanation: q.explanation ? String(q.explanation) : undefined,
+      };
+      const res = await fetch("http://localhost:3000/api/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Create failed: ${res.status}`);
+      const data = await res.json();
+      const created = data?.question;
+      if (!created?.id) throw new Error("Invalid response");
+      setItems((prev) => [created, ...prev]);
+    } catch (e) {
+      console.log("Failed to create question", e);
+    }
+  };
 
   const settingsSheetRef = useRef<BottomSheetModal>(null);
   const handlePresentSettingsPress = useCallback(() => {
@@ -253,13 +317,14 @@ const ExistingSetScreen = () => {
         numColumns={1}
         contentContainerStyle={styles.listContent}
         renderItem={({ item, index }) => (
-          <QuestionCard
+          <McqCard
             question={item}
             position={index + 1}
-            selected={selectedAnswers[String(item?.id ?? index)] || ""}
+            selected={selectedAnswers[String(item?.id ?? index)] ?? -1}
             selectAnswer={handleSelectingAnswer}
             editQuestion={editQuestionById}
             deleteQuestion={deleteQuestionById}
+            showAnswer={!!showAnswer}
           />
         )}
         ListHeaderComponent={() => (
@@ -291,6 +356,7 @@ const ExistingSetScreen = () => {
         >
           <BottomSheetView style={{ flex: 1 }}>
             <SetSettingsUpdateView set={set as any} setSet={setSet as any} />
+            <NewQuestionsAdd onCreate={handleCreateQuestion} />
           </BottomSheetView>
         </BottomSheetModal>
       </BottomSheetModalProvider>

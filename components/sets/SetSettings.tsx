@@ -45,7 +45,16 @@ function SetSettingsUpdateView({ set, setSet }: SetSettingsUpdateViewProps) {
     try {
       setIsPending(true);
       setError("");
-      setSet((prev) => ({ ...prev, title, visibility: currentVisibility }));
+      const res = await fetch(`http://localhost:3000/api/set/${set.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, visibility: currentVisibility }),
+      });
+      if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+      const data = await res.json();
+      const updated = data?.set;
+      if (!updated?.id) throw new Error("Invalid response");
+      setSet((prev) => ({ ...prev, title: String(updated.title || title), visibility: String(updated.visibility || currentVisibility) }));
     } catch (_e) {
       setError("Failed to update set. Please try again.");
     } finally {

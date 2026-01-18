@@ -477,7 +477,7 @@ export default function NewQuestionsAdd({
   onCreate: (q: any) => void;
 }) {
   const difficulty = useCreateNewQuestionStore((s) => s.difficulty);
-  const questionType = useCreateNewQuestionStore((s) => s.questionType);
+  const questionType: QuestionKind = "multiple_choice_questions";
   const questionText = useCreateNewQuestionStore((s) => s.questionText);
   const state = useCreateNewQuestionStore();
   const choices = getChoicesBasedOnQuestionType(questionType, state);
@@ -491,23 +491,8 @@ export default function NewQuestionsAdd({
   );
   const [error, setError] = useState("");
 
-  let inputs: React.ReactNode = null;
-  switch (questionType) {
-    case "multiple_choice_questions":
-      inputs = <MCQInputs />;
-      break;
-    case "true_false":
-      inputs = <TrueFalseInputs />;
-      break;
-    case "short_question":
-      inputs = <ShortAnswerInputs />;
-      break;
-    case "fill_in_the_blanks":
-      inputs = <FillInTheBlanksInputs />;
-      break;
-    default:
-      break;
-  }
+  // Render only MCQ inputs
+  const inputs: React.ReactNode = <MCQInputs />;
 
   const resetStates = useCreateNewQuestionStore((s) => s.reset);
 
@@ -525,29 +510,17 @@ export default function NewQuestionsAdd({
     setError("");
 
     const id = String(Date.now());
-    let questionPayload: any = {
+    const answerIdx = state.mcq.correctAnswer;
+    const questionPayload: any = {
       id,
-      type: questionType,
+      type: "mcq",
       text: questionText,
       difficulty,
       explanation,
+      choices: [...choices],
+      answer: correctAnswer,
+      answerIdx,
     };
-
-    if (questionType === "multiple_choice_questions") {
-      const answerIdx = state.mcq.correctAnswer;
-      questionPayload.choices = [...choices];
-      questionPayload.answer = correctAnswer;
-      questionPayload.answerIdx = answerIdx;
-    } else if (questionType === "true_false") {
-      const answerIdx = state.trueFalse.correctAnswer;
-      questionPayload.choices = [...choices];
-      questionPayload.answer = correctAnswer;
-      questionPayload.answerIdx = answerIdx;
-    } else if (questionType === "short_question") {
-      questionPayload.answerText = correctAnswer;
-    } else if (questionType === "fill_in_the_blanks") {
-      questionPayload.choices = [...choices];
-    }
 
     onCreate(questionPayload);
     resetStates();
@@ -555,8 +528,6 @@ export default function NewQuestionsAdd({
 
   return (
     <View style={rnStyles.container}>
-      <QuestionTypeSelector />
-      <View style={{ height: 12 }} />
       {inputs}
       <View style={rnStyles.fieldGroup}>
         <Text style={rnStyles.label}>Difficulty</Text>
