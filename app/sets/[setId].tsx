@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Image,
+  ActivityIndicator,
 } from "react-native";
 
 import {
@@ -22,6 +23,9 @@ import {
   Lock,
   Eye,
   ArrowLeft,
+  Pencil,
+  X,
+  Check,
 } from "lucide-react-native";
 
 import useExistingSetStore from "../../store/existingSetStore";
@@ -101,6 +105,12 @@ const Header = ({
   toggleShowAnswer,
   onAdd,
   onSettings,
+  editMode,
+  onToggleEditMode,
+  hasUnsavedChanges,
+  onSaveOrder,
+  onCancelEdit,
+  isSaving,
 }: {
   setId: string | number;
   title: string;
@@ -110,6 +120,12 @@ const Header = ({
   toggleShowAnswer: () => void;
   onAdd: () => void;
   onSettings: () => void;
+  editMode: boolean;
+  onToggleEditMode: () => void;
+  hasUnsavedChanges: boolean;
+  onSaveOrder: () => void;
+  onCancelEdit: () => void;
+  isSaving: boolean;
 }) => {
   const users: AccessUser[] = [];
   const isLoading = false;
@@ -128,22 +144,72 @@ const Header = ({
           {title}
         </Text>
         <View style={styles.headerActions}>
+          {!editMode && (
+            <>
+              <TouchableOpacity
+                onPress={onAdd}
+                style={styles.iconButton}
+                accessibilityLabel="Add question"
+              >
+                <Plus size={22} color="#e5e7eb" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onSettings}
+                style={styles.iconButton}
+                accessibilityLabel="Set settings"
+              >
+                <Settings size={22} color="#e5e7eb" />
+              </TouchableOpacity>
+            </>
+          )}
           <TouchableOpacity
-            onPress={onAdd}
-            style={styles.iconButton}
-            accessibilityLabel="Add question"
+            onPress={onToggleEditMode}
+            style={[
+              styles.iconButton,
+              editMode && { backgroundColor: "#7c3aed", borderColor: "#7c3aed" },
+            ]}
+            accessibilityLabel={editMode ? "Exit edit mode" : "Enter edit mode"}
           >
-            <Plus size={22} color="#e5e7eb" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={onSettings}
-            style={styles.iconButton}
-            accessibilityLabel="Set settings"
-          >
-            <Settings size={22} color="#e5e7eb" />
+            <Pencil size={22} color="#e5e7eb" />
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Edit Mode Actions Bar */}
+      {editMode && (
+        <View style={editModeStyles.editModeBar}>
+          <Text style={editModeStyles.editModeText}>Reorder Mode</Text>
+          <View style={editModeStyles.editModeActions}>
+            <TouchableOpacity
+              onPress={onCancelEdit}
+              style={editModeStyles.cancelBtn}
+              accessibilityLabel="Cancel"
+            >
+              <X size={18} color="#e5e7eb" />
+              <Text style={editModeStyles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onSaveOrder}
+              disabled={!hasUnsavedChanges || isSaving}
+              style={[
+                editModeStyles.saveBtn,
+                (!hasUnsavedChanges || isSaving) && editModeStyles.saveBtnDisabled,
+              ]}
+              accessibilityLabel="Save order"
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Check size={18} color="#ffffff" />
+                  <Text style={editModeStyles.saveBtnText}>Save</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       <View style={styles.headerMetaRow}>
         <View style={styles.visibilityBadge}>
           {getVisibilityIcon(visibility)}
@@ -184,6 +250,7 @@ const ExistingSetScreen = () => {
   }, [setId]);
 
   const [items, setItems] = useState<any[]>([]);
+  const [originalItems, setOriginalItems] = useState<any[]>([]);
 
   React.useEffect(() => {
     const fetchQuestions = async () => {
@@ -194,6 +261,7 @@ const ExistingSetScreen = () => {
          const data = await resp.json();
          if (Array.isArray(data?.questions)) {
            setItems(data.questions);
+           setOriginalItems(data.questions);
          }
 
       } catch (e) {
@@ -202,6 +270,88 @@ const ExistingSetScreen = () => {
     };
     if (setId) fetchQuestions();
   }, [setId]);
+
+  // Edit mode state
+  const [editMode, setEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Check if order has changed
+  const hasUnsavedChanges = useMemo(() => {
+    if (items.length !== originalItems.length) return true;
+    return items.some((item, index) => item.id !== originalItems[index]?.id);
+  }, [items, originalItems]);
+
+  // Toggle edit mode
+  const handleToggleEditMode = () => {
+    if (editMode) {
+      // Exiting edit mode - reset to original order
+      setItems(originalItems);
+    }
+    setEditMode(!editMode);
+  };
+
+  // Cancel edit mode
+  const handleCancelEdit = () => {
+    setItems(originalItems);
+    setEditMode(false);
+  };
+
+  // Move question up
+  const moveQuestionUp = (index: number) => {
+    if (index <= 0) return;
+    setItems((prev) => {
+      const newItems = [...prev];
+      [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+      return newItems;
+    });
+  };
+
+  // Move question down
+  const moveQuestionDown = (index: number) => {
+    if (index >= items.length - 1) return;
+    setItems((prev) => {
+      const newItems = [...prev];
+      [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+      return newItems;
+    });
+  };
+
+  // Save new order to backend
+  const handleSaveOrder = async () => {
+    if (!hasUnsavedChanges || !set?.id) return;
+
+    setIsSaving(true);
+    try {
+      const positions = items.map((item, index) => ({
+        questionId: item.id,
+        position: index + 1,
+      }));
+
+      const res = await fetch("http://localhost:3000/api/questions/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ setId: set.id, positions }),
+      });
+
+      if (!res.ok) throw new Error(`Reorder failed: ${res.status}`);
+
+      const data = await res.json();
+      if (Array.isArray(data?.questions)) {
+        setItems(data.questions);
+        setOriginalItems(data.questions);
+      } else {
+        // If API doesn't return updated list, use local state
+        setOriginalItems(items);
+      }
+
+      setEditMode(false);
+    } catch (e) {
+      console.log("Failed to save order", e);
+      // Optionally show error to user
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const editQuestionById = async (questionId: string | number, updates: any) => {
     // optimistic update
@@ -224,6 +374,9 @@ const ExistingSetScreen = () => {
         setItems((curr) =>
           curr.map((q: any) => (String(q.id) === String(updated.id) ? updated : q)),
         );
+        setOriginalItems((curr) =>
+          curr.map((q: any) => (String(q.id) === String(updated.id) ? updated : q)),
+        );
       }
     } catch (e) {
       console.log("Failed to update question", e);
@@ -234,8 +387,10 @@ const ExistingSetScreen = () => {
 
   const deleteQuestionById = async (questionId: string | number) => {
     const prevItems = items;
+    const prevOriginal = originalItems;
     // optimistic remove
     setItems((prev) => prev.filter((q: any) => String(q.id) !== String(questionId)));
+    setOriginalItems((prev) => prev.filter((q: any) => String(q.id) !== String(questionId)));
     try {
       const res = await fetch(
         `http://localhost:3000/api/question/${encodeURIComponent(String(questionId))}`,
@@ -248,6 +403,7 @@ const ExistingSetScreen = () => {
       console.log("Failed to delete question", e);
       // rollback
       setItems(prevItems);
+      setOriginalItems(prevOriginal);
     }
   };
 
@@ -293,7 +449,9 @@ const ExistingSetScreen = () => {
       const data = await res.json();
       const created = data?.question;
       if (!created?.id) throw new Error("Invalid response");
-      setItems((prev) => [created, ...prev]);
+      // Add to end of list (new questions get highest position)
+      setItems((prev) => [...prev, created]);
+      setOriginalItems((prev) => [...prev, created]);
     } catch (e) {
       console.log("Failed to create question", e);
     }
@@ -325,6 +483,11 @@ const ExistingSetScreen = () => {
             editQuestion={editQuestionById}
             deleteQuestion={deleteQuestionById}
             showAnswer={!!showAnswer}
+            editMode={editMode}
+            onMoveUp={() => moveQuestionUp(index)}
+            onMoveDown={() => moveQuestionDown(index)}
+            isFirst={index === 0}
+            isLast={index === items.length - 1}
           />
         )}
         ListHeaderComponent={() => (
@@ -337,6 +500,12 @@ const ExistingSetScreen = () => {
             toggleShowAnswer={toggleShowAnswer}
             onAdd={onAdd}
             onSettings={handlePresentSettingsPress}
+            editMode={editMode}
+            onToggleEditMode={handleToggleEditMode}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onSaveOrder={handleSaveOrder}
+            onCancelEdit={handleCancelEdit}
+            isSaving={isSaving}
           />
         )}
         ListEmptyComponent={() => (
@@ -363,5 +532,67 @@ const ExistingSetScreen = () => {
     </View>
   );
 };
+
+// Edit mode specific styles
+import { StyleSheet } from "react-native";
+
+const editModeStyles = StyleSheet.create({
+  editModeBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#1e1033",
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#7c3aed",
+  },
+  editModeText: {
+    color: "#c4b5fd",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  editModeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#374151",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#4b5563",
+  },
+  cancelBtnText: {
+    color: "#e5e7eb",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#16a34a",
+  },
+  saveBtnDisabled: {
+    backgroundColor: "#374151",
+    opacity: 0.6,
+  },
+  saveBtnText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+});
 
 export default ExistingSetScreen;

@@ -30,6 +30,7 @@ app.delete("/api/set/:setId", controllers.deleteSetController);
 app.get("/api/sets/search", controllers.searchSetsController);
 
 app.post("/api/questions", controllers.createQuestionController);
+app.post("/api/questions/reorder", controllers.reorderQuestionsController);
 app.patch("/api/question/:questionId", controllers.updateQuestionController);
 app.delete("/api/question/:questionId", controllers.deleteQuestionController);
 

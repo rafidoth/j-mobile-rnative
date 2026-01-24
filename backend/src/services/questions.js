@@ -8,7 +8,7 @@ export async function listQuestionsBySetId(
   const {
     limit = 50,
     offset = 0,
-    orderBy = { field: "createdAt", direction: "desc" },
+    orderBy = { field: "position", direction: "asc" },
   } = opts;
 
   const take = Math.min(Number(limit) || 50, 100);
@@ -27,6 +27,7 @@ export async function listQuestionsBySetId(
         answer: true,
         answerIdx: true,
         explanation: true,
+        position: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -38,6 +39,20 @@ export async function listQuestionsBySetId(
   } catch (err) {
     console.error("listQuestionsBySetId error", err);
     throw err;
+  }
+}
+
+export async function getMaxPositionInSet(setId) {
+  if (!setId || typeof setId !== "string") return 0;
+  try {
+    const result = await prisma.question.aggregate({
+      where: { setId },
+      _max: { position: true },
+    });
+    return result._max.position ?? 0;
+  } catch (err) {
+    console.error("getMaxPositionInSet error", err);
+    return 0;
   }
 }
 
@@ -58,6 +73,10 @@ export async function createQuestion({
     throw new Error("answerIdx must be >= 0");
   }
   try {
+    // Get the next position (max + 1)
+    const maxPosition = await getMaxPositionInSet(setId);
+    const nextPosition = maxPosition + 1;
+
     const question = await prisma.question.create({
       data: {
         setId,
@@ -68,6 +87,7 @@ export async function createQuestion({
         answer: answer ?? "",
         answerIdx: typeof answerIdx === "number" ? answerIdx : 0,
         explanation: explanation ?? null,
+        position: nextPosition,
       },
       select: {
         id: true,
@@ -79,6 +99,7 @@ export async function createQuestion({
         answer: true,
         answerIdx: true,
         explanation: true,
+        position: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -129,6 +150,7 @@ export async function updateQuestionById(id, updates = {}) {
         answer: true,
         answerIdx: true,
         explanation: true,
+        position: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -145,13 +167,80 @@ export async function deleteQuestionById(id) {
     throw new Error("question id is required");
   }
   try {
-    const deleted = await prisma.question.delete({
+    // First get the question to know its setId and position
+    const question = await prisma.question.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, setId: true, position: true },
     });
+
+    if (!question) {
+      throw new Error("Question not found");
+    }
+
+    const { setId, position } = question;
+
+    // Delete the question and renumber remaining questions in a transaction
+    const [deleted] = await prisma.$transaction([
+      prisma.question.delete({
+        where: { id },
+        select: { id: true },
+      }),
+      // Decrement position for all questions after the deleted one
+      prisma.question.updateMany({
+        where: {
+          setId,
+          position: { gt: position },
+        },
+        data: {
+          position: { decrement: 1 },
+        },
+      }),
+    ]);
+
     return deleted;
   } catch (err) {
     console.error("deleteQuestionById error", err);
+    throw err;
+  }
+}
+
+export async function reorderQuestions(setId, positions) {
+  if (!setId || typeof setId !== "string") {
+    throw new Error("setId is required");
+  }
+  if (!Array.isArray(positions) || positions.length === 0) {
+    throw new Error("positions array is required");
+  }
+
+  try {
+    // Update all positions in a transaction
+    const updates = positions.map(({ questionId, position }) =>
+      prisma.question.update({
+        where: { id: questionId },
+        data: { position },
+        select: {
+          id: true,
+          setId: true,
+          text: true,
+          type: true,
+          difficulty: true,
+          choices: true,
+          answer: true,
+          answerIdx: true,
+          explanation: true,
+          position: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      })
+    );
+
+    const updatedQuestions = await prisma.$transaction(updates);
+    
+    // Return sorted by position
+    return updatedQuestions.sort((a, b) => a.position - b.position);
+  } catch (err) {
+    console.error("reorderQuestions error", err);
     throw err;
   }
 }

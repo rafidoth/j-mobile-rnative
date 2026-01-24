@@ -4,15 +4,19 @@ import TrueFalseCard from "./TrueFalseCard";
 import ShortAnswerCard from "./ShortAnswerCard";
 import FillInTheBlanksCard from "./FillInTheBlanksCard";
 import { Text } from "react-native";
-import type { Question } from "@/types/questions";
 
 interface Props {
-  question: Question;
+  question: any;
   position: number;
-  selected: string;
-  selectAnswer: (id: string, ans: string) => void;
+  selected: any;
+  selectAnswer: (id: string | number, ans: any) => void;
   editQuestion: (questionId: string | number, updates: any) => void;
   deleteQuestion: (questionId: string | number) => void;
+  editMode?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export default function QuestionCard({
@@ -22,52 +26,78 @@ export default function QuestionCard({
   selectAnswer,
   editQuestion,
   deleteQuestion,
+  editMode = false,
+  onMoveUp,
+  onMoveDown,
+  isFirst = false,
+  isLast = false,
 }: Props) {
   const showAnswer = useExistingSetStore((state: any) => state.showAnswer);
 
   // Handle missing or unknown types gracefully
   const type = q?.type;
   switch (type) {
+    case "mcq":
     case "multiple_choice_questions":
       return (
         <McqCard
-          question={q as any}
+          question={q}
           showAnswer={showAnswer}
           position={position}
-          selected={selected}
-          selectAnswer={selectAnswer}
+          selected={typeof selected === "number" ? selected : -1}
+          selectAnswer={(id, ansIndex) => selectAnswer(id, ansIndex)}
           editQuestion={editQuestion}
           deleteQuestion={deleteQuestion}
+          editMode={editMode}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          isFirst={isFirst}
+          isLast={isLast}
         />
       );
     case "short_question":
       return (
         <ShortAnswerCard
-          question={q as any}
+          question={q}
           showAnswer={showAnswer}
           position={position}
-          selected={selected}
-          selectAnswer={selectAnswer}
+          selected={typeof selected === "string" ? selected : ""}
+          selectAnswer={(id, ans) => selectAnswer(id, ans)}
+          editMode={editMode}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          isFirst={isFirst}
+          isLast={isLast}
         />
       );
     case "fill_in_the_blanks":
       return (
         <FillInTheBlanksCard
-          question={q as any}
+          question={q}
           showAnswer={showAnswer}
           position={position}
-          selected={selected}
-          selectAnswer={selectAnswer}
+          selected={typeof selected === "string" ? selected : ""}
+          selectAnswer={(id, ans) => selectAnswer(id, ans)}
+          editMode={editMode}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          isFirst={isFirst}
+          isLast={isLast}
         />
       );
     case "true_false":
       return (
         <TrueFalseCard
-          question={q as any}
+          question={q}
           showAnswer={showAnswer}
           position={position}
-          selected={selected}
-          selectAnswer={selectAnswer}
+          selected={typeof selected === "string" ? selected : ""}
+          selectAnswer={(id, ans) => selectAnswer(id, ans)}
+          editMode={editMode}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          isFirst={isFirst}
+          isLast={isLast}
         />
       );
     default:

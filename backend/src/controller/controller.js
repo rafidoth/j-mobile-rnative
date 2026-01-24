@@ -10,6 +10,7 @@ import deleteSetController from "./deleteSetController.js";
 import updateQuestionController from "./updateQuestionController.js";
 import deleteQuestionController from "./deleteQuestionController.js";
 import searchSetsController from "./searchSetsController.js";
+import reorderQuestionsController from "./reorderQuestionsController.js";
 
 export default {
   signupController,
@@ -24,4 +25,5 @@ export default {
   updateQuestionController,
   deleteQuestionController,
   searchSetsController,
+  reorderQuestionsController,
 };

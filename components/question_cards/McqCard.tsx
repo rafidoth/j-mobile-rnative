@@ -8,7 +8,7 @@ import {
 } from "react-native";
 // Removed missing type import; using inline types
 import { typeLabel } from "./CardUtils";
-import { Trash } from "lucide-react-native";
+import { Trash, ChevronUp, ChevronDown } from "lucide-react-native";
 
 interface Props {
   question: any;
@@ -18,6 +18,11 @@ interface Props {
   selectAnswer: (id: string | number, ansIndex: number) => void;
   editQuestion: (questionId: string | number, updates: any) => void;
   deleteQuestion: (questionId: string | number) => void;
+  editMode?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 function difficultyColor(d: string) {
@@ -36,6 +41,11 @@ export default function McqCard({
   selectAnswer,
   editQuestion,
   deleteQuestion,
+  editMode = false,
+  onMoveUp,
+  onMoveDown,
+  isFirst = false,
+  isLast = false,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftText, setDraftText] = useState(q.text);
@@ -68,6 +78,31 @@ export default function McqCard({
 
   return (
     <View style={styles.card}>
+      {/* Reorder buttons - shown only in edit mode */}
+      {editMode && (
+        <View style={styles.reorderRow}>
+          <TouchableOpacity
+            onPress={onMoveUp}
+            disabled={isFirst}
+            style={[styles.reorderBtn, isFirst && styles.reorderBtnDisabled]}
+            accessibilityLabel="Move question up"
+            activeOpacity={0.7}
+          >
+            <ChevronUp size={20} color={isFirst ? "#4b5563" : "#e5e7eb"} />
+          </TouchableOpacity>
+          <Text style={styles.reorderPositionText}>Position {position}</Text>
+          <TouchableOpacity
+            onPress={onMoveDown}
+            disabled={isLast}
+            style={[styles.reorderBtn, isLast && styles.reorderBtnDisabled]}
+            accessibilityLabel="Move question down"
+            activeOpacity={0.7}
+          >
+            <ChevronDown size={20} color={isLast ? "#4b5563" : "#e5e7eb"} />
+          </TouchableOpacity>
+        </View>
+      )}
+
       <View style={styles.headerRow}>
         <View style={[styles.badge, difficultyColor(q.difficulty)]}>
           <Text
@@ -176,6 +211,32 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     gap: 10,
+  },
+  reorderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#334155",
+    marginBottom: 4,
+  },
+  reorderBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#1f2937",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#334155",
+  },
+  reorderBtnDisabled: {
+    opacity: 0.4,
+    backgroundColor: "#111827",
+  },
+  reorderPositionText: {
+    color: "#9ca3af",
+    fontSize: 12,
+    fontWeight: "500",
   },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   badge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999 },
