@@ -34,6 +34,9 @@ app.post("/api/questions/reorder", controllers.reorderQuestionsController);
 app.patch("/api/question/:questionId", controllers.updateQuestionController);
 app.delete("/api/question/:questionId", controllers.deleteQuestionController);
 
+// AI Generation endpoint
+app.post("/api/generate-questions", controllers.generateQuestionsController);
+
 app.listen(port, () => {
   console.log(`server running on http://localhost:${port}`);
 });

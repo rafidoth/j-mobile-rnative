@@ -11,6 +11,7 @@ import updateQuestionController from "./updateQuestionController.js";
 import deleteQuestionController from "./deleteQuestionController.js";
 import searchSetsController from "./searchSetsController.js";
 import reorderQuestionsController from "./reorderQuestionsController.js";
+import { generateQuestionsController } from "./aiGenerateController.js";
 
 export default {
   signupController,
@@ -26,4 +27,5 @@ export default {
   deleteQuestionController,
   searchSetsController,
   reorderQuestionsController,
+  generateQuestionsController,
 };
